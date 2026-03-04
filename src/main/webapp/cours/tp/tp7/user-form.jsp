@@ -11,10 +11,10 @@
         <p style="color:red">${error}</p>
     </c:if>
     
+    <!-- ✅ Action avec contextPath -->
     <form action="${pageContext.request.contextPath}/user-form" method="post">
         
-        <!-- ✅ Utiliser editUser au lieu de user -->
-        <input type="hidden" name="id" value="${not empty editUser ? editUser.id : ''}">
+        <input type="hidden" name="id" value="${not empty editUser and editUser.id > 0 ? editUser.id : ''}">
         
         <label>Username: 
             <input type="text" name="username" 
@@ -31,5 +31,12 @@
         <button type="submit">Enregistrer</button>
         <a href="${pageContext.request.contextPath}/user-list">Annuler</a>
     </form>
+    
+    <!-- ✅ Debug : afficher l'id pour vérification (à retirer en prod) -->
+    <c:if test="${not empty editUser}">
+        <p style="font-size:0.8em; color:gray;">
+            [DEBUG] editUser.id = ${editUser.id}
+        </p>
+    </c:if>
 </body>
 </html>
