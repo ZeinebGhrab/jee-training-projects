@@ -4,11 +4,21 @@ A collection of Java EE (Jakarta EE) lab exercises covering Servlets, JSP, MVC a
 
 ---
 
+## Folder Organization
+
+| Folder | Purpose |
+|--------|---------|
+| `cours/` | **Class sessions** — code written during lectures |
+| `tp/` | **Lab sessions** — exercises done during supervised TP sessions |
+| `test/` | **Home exercises** — personal practice done outside of class |
+
+---
+
 ## Project Structure
 
 ```
 src/main/java/
-├── cours/
+├── cours/                  # 📚 Class session code
 │   ├── chaptire2/          # Chapter 2 – HTTP Request Info
 │   ├── chaptire3/
 │   │   ├── Exemple1/       # Chapter 3 Ex1 – Servlet + JSP (GET param)
@@ -18,9 +28,13 @@ src/main/java/
 │          ├── metier/      # DAO, User model, DB connection
 │          └── web/         # Servlets (Login, Logout, UserList, UserForm)
 │
-└── tp/tp2/                 # TP2 – Loan Calculator (MVC)
-    ├── metier/             # Business layer
-    └── web/                # Controller + Model
+├── tp/                     # 🔬 Lab session code
+│   └── tp2/                # TP2 – Loan Calculator (MVC)
+│       ├── metier/         # Business layer
+│       └── web/            # Controller + Model
+│    
+└── test/                   # 🏠 Home exercise code
+    └── tp2/                #   Personal re-implementation of TP2 + JUnit tests
 
 
 
@@ -32,7 +46,8 @@ src/main/webapp/
 
 ---
 
-## Labs Overview
+
+## Course Sessions (`cours/`)
 
 ### Chapter 2 – HTTP Request Information
 **Servlet:** `Application.java` → `/info`
@@ -46,80 +61,55 @@ Displays basic HTTP request metadata: protocol, scheme, server name, port, and H
 #### Example 1 – URL Parameter Forwarding
 **Servlet:** `Servlet.java` → `/fs`
 
-Reads an `age` parameter from the URL query string and forwards it to `View.jsp`, which displays a greeting and age category.
+Reads an `age` URL parameter and forwards it to `View.jsp`, which displays a greeting and age category.
 
 #### Example 2 – HTML Form Processing
 **Servlet:** `Controleur.java` → `/controleur`
 
 - `GET` → displays `formulaire.jsp` (title, first name, last name, age)
-- `POST` → processes form data using `PersonneService`, then forwards to `resultat.jsp`
+- `POST` → processes form data via `PersonneService`, then forwards to `resultat.jsp`
 
-**Age categories (via `PersonneService`):**
+**Age categories (`PersonneService`):**
 
 | Age Range | Category |
 |-----------|----------|
-| 1 – 11    | Child (enfant) |
-| 12 – 17   | Teenager (adolescent) |
-| 18 – 59   | Adult (adulte) |
-| 60+       | Senior (personne du troisième âge) |
+| 1 – 11 | Child (enfant) |
+| 12 – 17 | Teenager (adolescent) |
+| 18 – 59 | Adult (adulte) |
+| 60+ | Senior (personne du troisième âge) |
 
 ---
 
-### TP2 – Loan Monthly Payment Calculator
-
-**Servlet:** `ControleurServlet.java` → `/calcul`
-
-A classic MVC loan calculator.
-
-- `GET` → displays the empty form (`VueCredit.jsp`)
-- `POST` → reads loan parameters and computes the monthly payment
-
-**Formula:**
-
-```
-mensualité = C × (t/12) / (1 − (1 + t/12)^−n)
-```
-
-Where `C` = capital, `t` = monthly rate (annual rate / 100), `n` = duration in months.
-
-**Layers:**
-- `ICreditMetier` / `CreditMetierImp` → business logic
-- `CreditModel` → data transfer object
-- `ControleurServlet` → MVC controller
-- `VueCredit.jsp` → view
-
-**Test:** `TestCalcul.java` — verifies that a €200,000 loan at 4.5% over 240 months yields ~€1265.30/month.
-
----
-
-### TP7 – User Management CRUD with Session Authentication
+### TP7 – User CRUD with Session Authentication
+**Package:** `cours.tp.tp7`
 
 A full CRUD application with login/logout session management backed by a MySQL database.
 
-#### Setup
-
-1. Create a MySQL database named `crud_app`
-2. Create a `users` table:
+#### Database Setup
 
 ```sql
+CREATE DATABASE crud_app;
+
+USE crud_app;
+
 CREATE TABLE users (
     id       INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL
 );
 ```
 
-3. Update credentials in `ConnectionManager.java` if needed (default: `root` / no password).
+Update credentials in `ConnectionManager.java` if needed (default: `root` / no password).
 
 #### URL Mapping
 
 | URL | Servlet | Description |
 |-----|---------|-------------|
 | `/login` | `LoginServlet` | Login form (GET) / Authenticate (POST) |
-| `/logout` | `LogoutServlet` | Destroy session and redirect to login |
+| `/logout` | `LogoutServlet` | Destroy session → redirect to login |
 | `/user-list` | `UserListServlet` | List all users (session required) |
-| `/user-form` | `UserFormServlet` | Add (GET `?action=add`) or Edit (GET `?action=edit&id=X`) |
-| `/user-delete` | *(link in JSP)* | Delete a user by ID |
+| `/user-form` | `UserFormServlet` | Add (`?action=add`) or Edit (`?action=edit&id=X`) |
+| `/user-delete` | `UserDeleteServlet` | Delete a user by ID |
 
 #### Architecture
 
@@ -129,17 +119,57 @@ LoginServlet / LogoutServlet
 UserListServlet  ←→  UserDAO  ←→  ConnectionManager (MySQL)
         ↓                ↑
 UserFormServlet  ←→  User (model)
+        ↓
+UserDeleteServlet
 ```
+
+> **Note:** `ConnectionManager.getConnection()` opens a **fresh connection on every call**. This is required because `UserDAO` uses try-with-resources, which closes the connection after each query. A shared static connection would be closed after the first use, silently breaking all subsequent DB calls.
+
+---
+
+## Lab Session (`tp/`)
+
+### TP2 – Loan Monthly Payment Calculator
+**Package:** `tp.tp2` | **Servlet:** `ControleurServlet.java` → `/calcul`
+
+- `GET` → displays the empty form (`VueCredit.jsp`)
+- `POST` → reads loan parameters, calls the business layer, displays the monthly payment
+
+**Formula:**
+
+```
+mensualité = C × (t/12) / (1 − (1 + t/12)^−n)
+```
+
+Where `C` = capital, `t` = monthly interest rate (annual rate ÷ 100), `n` = duration in months.
+
+**Layers:**
+- `ICreditMetier` / `CreditMetierImp` → business logic
+- `CreditModel` → data transfer object
+- `ControleurServlet` → MVC controller
+- `VueCredit.jsp` → view
+
+---
+
+## Home Exercises (`test/`)
+
+### TP2 – Loan Calculator (Home Re-implementation)
+**Package:** `test.tp2` | **Servlet:** `ControleurServlet.java` → `/calcul_tp2`
+
+A personal re-implementation of the TP2 loan calculator done at home to reinforce understanding. Uses `double` instead of `float` for higher precision, and includes a styled view (`style.css`) and a JUnit 5 unit test.
+
+**Test (`TestCalcul.java`):** Verifies that a €200,000 loan at 4.5% over 240 months yields ~€1,265.30/month.
 
 ---
 
 ## Technologies
 
-- **Jakarta EE (Servlet / JSP)**
-- **JSTL** (core taglib) for JSP views
-- **MySQL** + JDBC (TP7)
-- **JUnit 5** for unit testing (TP2)
-- **Apache Tomcat** (recommended server)
+- **Jakarta EE** — Servlet / JSP
+- **JSTL** — core taglib for JSP views
+- **Bootstrap 5** — UI styling (TP7 JSPs)
+- **MySQL + JDBC** — database (TP7)
+- **JUnit 5** — unit testing (TP2 home)
+- **Apache Tomcat 10+** — application server
 
 ---
 
@@ -148,10 +178,17 @@ UserFormServlet  ←→  User (model)
 - JDK 11+
 - Apache Tomcat 10+
 - Maven
-- MySQL (for TP7)
+- MySQL (for TP7 only)
 
 ---
 
 ## Notes
 
-- TP2 exists in two packages (`tp.tp2` and `test.tp2`) — both are equivalent implementations of the same exercise.
+- Passwords are stored in **plain text** in TP7 — intentional for learning purposes only. Never do this in production.
+- The `[DEBUG]` log statements in `UserDAO` are for development only and should be removed before any real deployment.
+
+
+
+
+
+
