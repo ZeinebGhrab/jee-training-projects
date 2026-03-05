@@ -24,7 +24,8 @@ src/main/java/
 │   │   ├── Exemple1/       # Chapter 3 Ex1 – Servlet + JSP (GET param)
 │   │   └── Exemple2/       # Chapter 3 Ex2 – Servlet + JSP (Form/POST)
 │   └── tp/
-│       └── tp7/
+│       ├── tp5/            # TP5 – Session management (Login/Logout, no DB)
+│       └── tp7/            # TP7 – User CRUD with session
 │          ├── metier/      # DAO, User model, DB connection
 │          └── web/         # Servlets (Login, Logout, UserList, UserForm)
 │
@@ -34,14 +35,18 @@ src/main/java/
 │       └── web/            # Controller + Model
 │    
 └── test/                   # 🏠 Home exercise code
-    └── tp2/                #   Personal re-implementation of TP2 + JUnit tests
+    └── tp2/                #  Personal re-implementation of TP2 + JUnit tests
 
 
 
 src/main/webapp/
-├── cours/chapitre3/        # JSP views for chapter 3 examples
-├── cours/tp/tp7/           # JSP views for TP7 (login, user-list, user-form)
-└── tp/tp2/                 # JSP view for loan calculator
+├── cours/
+│   ├── chapitre3/                  # JSP views for chapter 3 examples
+│   └── tp/
+│       ├── tp5/                    # JSP views for TP5 (login, welcome)
+│       └── tp7/                    # JSP views for TP7 (login, user-list, user-form)
+├── tp/tp2/                         # JSP view for lab TP2
+└── test/tp2/                       # JSP view + CSS for home TP2
 ```
 
 ---
@@ -77,6 +82,25 @@ Reads an `age` URL parameter and forwards it to `View.jsp`, which displays a gre
 | 12 – 17 | Teenager (adolescent) |
 | 18 – 59 | Adult (adulte) |
 | 60+ | Senior (personne du troisième âge) |
+
+---
+
+### TP5 – HTTP Session Management
+**Package:** `cours.tp.tp5`
+
+An introduction to session handling in Jakarta Servlets with a simple login/logout flow — no database involved.
+
+- `POST /login_tp5` (`LoginServlet`) → reads a username from the form, stores it in the session (`HttpSession`), then redirects to `welcome.jsp`
+- `GET /logout_tp5` (`LogoutServlet`) → invalidates the session and redirects back to `login.jsp`
+
+**JSP pages:**
+
+| Page | Description |
+|------|-------------|
+| `login.jsp` | Login form — displays an error message if the username is empty, shows the current session ID |
+| `welcome.jsp` | Welcome page — shows the logged-in username, session ID, creation time, and a logout link using `response.encodeURL()` for cookie-less support |
+
+**Key concepts covered:** `HttpSession`, `session.setAttribute()`, `session.invalidate()`, `session.getId()`, `getSession(false)` vs `getSession(true)`, URL rewriting with `encodeURL()`.
 
 ---
 
