@@ -30,13 +30,18 @@ src/main/java/
 │          └── web/         # Servlets (Login, Logout, UserList, UserForm)
 │
 ├── tp/                     # 🔬 Lab session code
-│   └── tp2/                # TP2 – Loan Calculator (MVC)
-│       ├── metier/         # Business layer
+│   ├── tp2/                # TP2 – Loan Calculator (MVC)
+│   │   ├── metier/         # Business layer
+│   │   └── web/            # Controller + Model
+│   └── tp3/                # TP3 – Product Catalogue (MVC + DB)
+│       ├── metier/         # DAO, Produit model, Singleton connection
 │       └── web/            # Controller + Model
-│    
+│
 └── test/                   # 🏠 Home exercise code
-    └── tp2/                #  Personal re-implementation of TP2 + JUnit tests
-
+    ├── tp2/                # Personal re-implementation of TP2 + JUnit tests
+    └── tp3/                # Extended re-implementation of TP3 (full CRUD)
+        ├── metier/         # DAO, Produit model, Singleton connection
+        └── web/            # Controller + Model
 
 
 src/main/webapp/
@@ -45,12 +50,15 @@ src/main/webapp/
 │   └── tp/
 │       ├── tp5/                    # JSP views for TP5 (login, welcome)
 │       └── tp7/                    # JSP views for TP7 (login, user-list, user-form)
-├── tp/tp2/                         # JSP view for lab TP2
-└── test/tp2/                       # JSP view + CSS for home TP2
+├── tp/
+│   ├── tp2/                        # JSP view for lab TP2
+│   └── tp3/                        # JSP view for lab TP3
+└── test/
+    ├── tp2/                        # JSP view + CSS for home TP2
+    └── tp3/                        # JSP view for home TP3 (full CRUD)
 ```
 
 ---
-
 
 ## Course Sessions (`cours/`)
 
@@ -151,7 +159,7 @@ UserDeleteServlet
 
 ---
 
-## Lab Session (`tp/`)
+## Lab Sessions (`tp/`)
 
 ### TP2 – Loan Monthly Payment Calculator
 **Package:** `tp.tp2` | **Servlet:** `ControleurServlet.java` → `/calcul`
@@ -175,6 +183,40 @@ Where `C` = capital, `t` = monthly interest rate (annual rate ÷ 100), `n` = dur
 
 ---
 
+### TP3 – Product Catalogue (Search + Add)
+**Package:** `tp.tp3` | **Servlet:** `ControleurServlet.java` → `/tp3`
+
+A basic product catalogue backed by a MySQL database with keyword search and product creation.
+
+- `GET /tp3` → loads all products (empty keyword) and displays `ProduitsView.jsp`
+- `POST /tp3` → processes a keyword search and re-renders the product list
+
+**Layers:**
+- `ImetierCatalogue` / `MetierImpl` → business layer (search + add)
+- `SingletonConnection` → shared JDBC connection (Singleton pattern)
+- `Produit` → entity model
+- `ProduitModele` → MVC model (keyword + product list)
+- `ControleurServlet` → MVC controller
+- `ProduitsView.jsp` → view (search form + add form + product table)
+
+#### Database Setup
+
+```sql
+CREATE DATABASE DB_MVC_CAT;
+
+USE DB_MVC_CAT;
+
+CREATE TABLE PRODUITS (
+    ID_PRODUIT  BIGINT AUTO_INCREMENT PRIMARY KEY,
+    NOM_PRODUIT VARCHAR(200) NOT NULL,
+    PRIX        DOUBLE       NOT NULL
+);
+```
+
+> **Note:** `SingletonConnection` holds a **single shared static connection** opened at class load time. This is simpler than TP7's approach but less robust — if the connection drops, the application must be restarted.
+
+---
+
 ## Home Exercises (`test/`)
 
 ### TP2 – Loan Calculator (Home Re-implementation)
@@ -186,12 +228,35 @@ A personal re-implementation of the TP2 loan calculator done at home to reinforc
 
 ---
 
+### TP3 – Product Catalogue (Home Re-implementation — Full CRUD)
+**Package:** `test.tp3` | **Servlet:** `ControleurServlet.java` → `/test_tp3`
+
+An extended re-implementation of TP3 with a **complete CRUD** (Create, Read, Update, Delete) instead of the lab's search-and-add-only version.
+
+- `GET /test_tp3` → default action `liste`: loads all products
+- `GET /test_tp3?action=edit&id=X` → loads a product into the edit form
+- `GET /test_tp3?action=supprimer&id=X` → deletes a product, then redirects to list
+- `POST /test_tp3` with `action=search` → keyword filter
+- `POST /test_tp3` with `action=ajouter` → inserts a new product, then redirects
+- `POST /test_tp3` with `action=update` → updates an existing product, then redirects
+
+**Extended interface `ImetierCatalogue`** adds `deleteProduit(Long id)`, `updateProduit(Produit p)`, and `getProduit(Long id)` on top of the lab version.
+
+**Extended model `ProduitModele`** adds `idProduit` and `action` fields to support the edit workflow.
+
+**View (`ProduitsView.jsp`):** Bootstrap 4 layout with a search bar, an add form, a conditional edit form (shown when `modele.idProduit != null`), and a product table with Edit / Delete action buttons.
+
+> Uses the same `SingletonConnection` and `DB_MVC_CAT` database as the lab TP3.
+
+---
+
 ## Technologies
 
 - **Jakarta EE** — Servlet / JSP
 - **JSTL** — core taglib for JSP views
+- **Bootstrap 4** — UI styling (TP3 home views)
 - **Bootstrap 5** — UI styling (TP7 JSPs)
-- **MySQL + JDBC** — database (TP7)
+- **MySQL + JDBC** — database (TP3, TP7)
 - **JUnit 5** — unit testing (TP2 home)
 - **Apache Tomcat 10+** — application server
 
@@ -202,7 +267,7 @@ A personal re-implementation of the TP2 loan calculator done at home to reinforc
 - JDK 11+
 - Apache Tomcat 10+
 - Maven
-- MySQL (for TP7 only)
+- MySQL (for TP3 and TP7)
 
 ---
 
@@ -210,9 +275,5 @@ A personal re-implementation of the TP2 loan calculator done at home to reinforc
 
 - Passwords are stored in **plain text** in TP7 — intentional for learning purposes only. Never do this in production.
 - The `[DEBUG]` log statements in `UserDAO` are for development only and should be removed before any real deployment.
-
-
-
-
-
-
+- `SingletonConnection` (TP3) uses a **single shared connection** opened once at startup. It is simpler than TP7's per-call approach but not suitable for concurrent or long-running applications.
+- The lab TP3 (`tp.tp3`) only implements search and add. The full CRUD (edit, update, delete) is in the home re-implementation (`test.tp3`).
